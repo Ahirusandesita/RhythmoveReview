@@ -26,44 +26,56 @@ public class NoteManager : INoteRegisteredable, IDisposable
 
     private string BGMFileName;
 
-    private class NoteInformation
+    /// <summary>
+    /// Noteの情報
+    /// </summary>
+    private class NoteTimingInformation
     {
+        /// <summary>
+        /// 時間計測
+        /// </summary>
         public float noteTimeCount;
+        /// <summary>
+        /// noteTimesのIndex
+        /// </summary>
         public int noteTimeIndex;
         public NoteTimingType noteTimingType;
-        public List<float> noteTimes;
+        /// <summary>
+        /// noteがくるタイミングのリスト
+        /// </summary>
+        public List<float> noteTimeTimings;
 
         public List<float> NoteTimes
         {
             set
             {
-                noteTimes = value;
+                noteTimeTimings = value;
             }
         }
 
-        public NoteInformation(float noteTimeCount, int index, NoteTimingType noteTimingType, List<float> noteTimes)
+        public NoteTimingInformation(float noteTimeCount, int index, NoteTimingType noteTimingType, List<float> noteTimes)
         {
             this.noteTimeCount = noteTimeCount;
             this.noteTimeIndex = index;
             this.noteTimingType = noteTimingType;
-            this.noteTimes = noteTimes;
+            this.noteTimeTimings = noteTimes;
         }
-        public NoteInformation(NoteTimingType noteTimingType)
+        public NoteTimingInformation(NoteTimingType noteTimingType)
         {
             this.noteTimeCount = 0f;
             this.noteTimeIndex = 0;
             this.noteTimingType = noteTimingType;
-            this.noteTimes = new List<float>();
+            this.noteTimeTimings = new List<float>();
         }
     }
 
-    private NoteInformation noteJust;
-    private NoteInformation noteEarly;
-    private NoteInformation noteLate;
+    private NoteTimingInformation noteJust;
+    private NoteTimingInformation noteEarly;
+    private NoteTimingInformation noteLate;
 
-    public Action action;
+    public Action noteTimingHandler;
 
-    private const int NOTE_JUSTTIMING_INDWX = 0;
+    private const int NOTE_JUSTTIMING_INDEX = 0;
     private const int NOTE_EARLYTIMING_INDEX = 1;
     private const int NOTE_LATETIMING_INDEX = 2;
 
@@ -71,9 +83,9 @@ public class NoteManager : INoteRegisteredable, IDisposable
     public NoteManager(StageInformationAsset stageInformationAsset)
     {
         this.BGMFileName = stageInformationAsset.BGMRhytmInformation;
-        noteJust = new NoteInformation(NoteTimingType.just);
-        noteEarly = new NoteInformation(NoteTimingType.early);
-        noteLate = new NoteInformation(NoteTimingType.late);
+        noteJust = new NoteTimingInformation(NoteTimingType.just);
+        noteEarly = new NoteTimingInformation(NoteTimingType.early);
+        noteLate = new NoteTimingInformation(NoteTimingType.late);
         Load();
     }
 
@@ -107,12 +119,12 @@ public class NoteManager : INoteRegisteredable, IDisposable
             //タイミング毎でListにAdd
 
             //ジャストタイミング
-            if (inputJson.notes[i].block == NOTE_JUSTTIMING_INDWX)
+            if (inputJson.notes[i].block == NOTE_JUSTTIMING_INDEX)
             {
                 float workTime = time;
                 time -= lastDelayTime;
                 lastDelayTime = workTime;
-                noteJust.noteTimes.Add(time);
+                noteJust.noteTimeTimings.Add(time);
             }
 
             //早タイミング
@@ -121,7 +133,7 @@ public class NoteManager : INoteRegisteredable, IDisposable
                 float workTime = time;
                 time -= lastDelayEarlyTime;
                 lastDelayEarlyTime = workTime;
-                noteEarly.noteTimes.Add(time);
+                noteEarly.noteTimeTimings.Add(time);
             }
             //遅タイミング
             else if (inputJson.notes[i].block == NOTE_LATETIMING_INDEX)
@@ -129,7 +141,7 @@ public class NoteManager : INoteRegisteredable, IDisposable
                 float workTime = time;
                 time -= lastDelayLateTime;
                 lastDelayLateTime = workTime;
-                noteLate.noteTimes.Add(time);
+                noteLate.noteTimeTimings.Add(time);
             }
 
         }
@@ -141,9 +153,9 @@ public class NoteManager : INoteRegisteredable, IDisposable
     /// </summary>
     public void Play()
     {
-        action += NoteJust;
-        action += NoteEarly;
-        action += NoteLate;
+        noteTimingHandler += NoteJust;
+        noteTimingHandler += NoteEarly;
+        noteTimingHandler += NoteLate;
     }
     /// <summary>
     /// Noteジャストタイミング
@@ -152,7 +164,7 @@ public class NoteManager : INoteRegisteredable, IDisposable
     {
         if (NoteTimingCalculation(noteJust))
         {
-            action -= NoteJust;
+            noteTimingHandler -= NoteJust;
         }
     }
     /// <summary>
@@ -162,7 +174,7 @@ public class NoteManager : INoteRegisteredable, IDisposable
     {
         if (NoteTimingCalculation(noteEarly))
         {
-            action -= NoteEarly;
+            noteTimingHandler -= NoteEarly;
         }
     }
     /// <summary>
@@ -172,7 +184,7 @@ public class NoteManager : INoteRegisteredable, IDisposable
     {
         if (NoteTimingCalculation(noteLate))
         {
-            action -= NoteLate;
+            noteTimingHandler -= NoteLate;
         }
     }
 
@@ -181,10 +193,10 @@ public class NoteManager : INoteRegisteredable, IDisposable
     /// </summary>
     /// <param name="noteInformation"></param>
     /// <returns></returns>
-    private bool NoteTimingCalculation(NoteInformation noteInformation)
+    private bool NoteTimingCalculation(NoteTimingInformation noteInformation)
     {
         noteInformation.noteTimeCount += Time.deltaTime;
-        if (noteInformation.noteTimeCount > noteInformation.noteTimes[noteInformation.noteTimeIndex])
+        if (noteInformation.noteTimeCount > noteInformation.noteTimeTimings[noteInformation.noteTimeIndex])
         {
             //ノーツ情報をイベントで発行
             NoteEventArgs noteEventArgs = new NoteEventArgs();
@@ -193,10 +205,10 @@ public class NoteManager : INoteRegisteredable, IDisposable
 
             //タイミングの誤差を調整する
             //前回のタイミングの計算から本来のタイミングを引いた時間から次のタイミング計算を始める//
-            noteInformation.noteTimeCount -= noteInformation.noteTimes[noteInformation.noteTimeIndex];
+            noteInformation.noteTimeCount -= noteInformation.noteTimeTimings[noteInformation.noteTimeIndex];
             noteInformation.noteTimeIndex++;
         }
-        if (noteInformation.noteTimeIndex >= noteInformation.noteTimes.Count)
+        if (noteInformation.noteTimeIndex >= noteInformation.noteTimeTimings.Count)
         {
             return true;
         }

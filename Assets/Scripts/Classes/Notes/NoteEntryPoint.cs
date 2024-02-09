@@ -28,7 +28,7 @@ public class NoteEntryPoint : ITickable, IDisposable
 
     public void Tick()
     {
-        noteManager.action?.Invoke();
+        noteManager.noteTimingHandler?.Invoke();
     }
 
     public void Dispose()
