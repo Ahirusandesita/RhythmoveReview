@@ -12,6 +12,9 @@ public class MoveDirectionLogicPlayer : MoveDirectionLogic
 
     private MoveType moveType = default;
 
+    public delegate void JustHandler(object sender, MoveEventArgs moveEventArgs);
+    public event JustHandler OnJustTiming;
+
     [Inject]
     public MoveDirectionLogicPlayer(IMovable movable, IProgressRegisterable progressManagement, INoteRegisteredable noteManager, MoveOrderData moveOrderData) : base(movable, progressManagement, noteManager, moveOrderData)
     {
@@ -41,11 +44,6 @@ public class MoveDirectionLogicPlayer : MoveDirectionLogic
 
     protected override void MoveDirectionChange(object sender, NoteEventArgs noteEventArgs)
     {
-        //ノーツ許容範囲　早～遅　で移動方向を切り替える
-        if (noteEventArgs.noteTiming == NoteTimingType.just)
-        {
-            return;
-        }
         switch (noteEventArgs.noteTiming)
         {
             case NoteTimingType.early:
@@ -55,6 +53,11 @@ public class MoveDirectionLogicPlayer : MoveDirectionLogic
             case NoteTimingType.late:
                 moveType = MoveType.nonMove;
                 NonMove();
+                break;
+            case NoteTimingType.just:
+                MoveEventArgs moveEventArgs = new MoveEventArgs();
+                moveEventArgs.moveType = moveProperty.Value;
+                OnJustTiming?.Invoke(this, moveEventArgs);
                 break;
         }
     }

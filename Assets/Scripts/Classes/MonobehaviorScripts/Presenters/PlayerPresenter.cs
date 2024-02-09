@@ -15,7 +15,7 @@ public class PlayerPresenter : MonoBehaviour, IDisposable
     //仲介する対象クラス
     private PlayerView playerView;
     private IMovable movable;
-    private MoveDirectionLogic moveDirectionLogic;
+    private MoveDirectionLogicPlayer moveDirectionLogic;
     private State state;
     private IProgressRegisterable progressManagement;
     private IDisposable disposable;
@@ -29,7 +29,7 @@ public class PlayerPresenter : MonoBehaviour, IDisposable
     /// <param name="playerSE"></param>
     /// <param name="progressManagement"></param>
     [Inject]
-    public void Inject(PlayerView playerView, IMovable movable, MoveDirectionLogic moveDirectionLogic, IProgressRegisterable progressManagement, State state)
+    public void Inject(PlayerView playerView, IMovable movable, MoveDirectionLogicPlayer moveDirectionLogic, IProgressRegisterable progressManagement, State state)
     {
         this.playerView = playerView;
         this.movable = movable;
@@ -55,6 +55,9 @@ public class PlayerPresenter : MonoBehaviour, IDisposable
         state.OnDamage += playerView.DamageHandler;
         movable.OnMove += playerView.MoveHandler;
         movable.OnMove += playerView.MoveSEHandler;
+
+
+        moveDirectionLogic.OnJustTiming += playerView.JustHandler;
     }
 
     public void Dispose()
@@ -67,6 +70,9 @@ public class PlayerPresenter : MonoBehaviour, IDisposable
         state.OnDamage -= playerView.DamageHandler;
         movable.OnMove -= playerView.MoveHandler;
         movable.OnMove -= playerView.MoveSEHandler;
+
+
+        moveDirectionLogic.OnJustTiming -= playerView.JustHandler;
     }
 
     public void ResetHandler(object sender, FinishEventArgs finishEventArgs)

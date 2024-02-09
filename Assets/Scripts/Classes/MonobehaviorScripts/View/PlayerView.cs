@@ -118,11 +118,6 @@ public class PlayerView : MonoBehaviour, IDisposable
 
     public void MoveDirectionSprite(MoveType moveType)
     {
-
-        if (moveOrder_AutoOrder[index, moveType])
-        {
-            TestExsampleAudioSource.PlayOneShot(SEAsset.ExsampleAudioClip);
-        }
         switch (moveType)
         {
             case MoveType.down:
@@ -146,6 +141,14 @@ public class PlayerView : MonoBehaviour, IDisposable
                 upFaceIndex++;
                 SpriteAnimation(leftImage);
                 break;
+        }
+    }
+
+    public void JustHandler(object sender,MoveEventArgs moveEventArgs)
+    {
+        if (moveOrder_AutoOrder[index, moveEventArgs.moveType])
+        {
+            TestExsampleAudioSource.PlayOneShot(SEAsset.ExsampleAudioClip);
         }
     }
 

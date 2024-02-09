@@ -17,7 +17,7 @@ public class PlayerLifeTimeScope : LifetimeScope
     protected override void Configure(IContainerBuilder builder)
     {
         //builder.R
-        builder.Register<MoveDirectionLogic,MoveDirectionLogicPlayer>(Lifetime.Transient);
+        builder.Register<MoveDirectionLogicPlayer,MoveDirectionLogicPlayer>(Lifetime.Transient);
         builder.Register<IMovable, MoveLogic>(Lifetime.Singleton).
             WithParameter(playerView.gameObject.transform).WithParameter(MoverType.player);
 
